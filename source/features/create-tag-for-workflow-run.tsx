@@ -21,7 +21,7 @@ async function createTag(baseSha: string): Promise<true | string> {
 		method: 'POST',
 		body: {
 			sha: baseSha,
-			ref: `refs/tags/tag-commit-${new Date().getMilliseconds()}-${baseSha.substring(0, 5)}`
+			ref: `refs/tags/release-${new Date().getMilliseconds()}-${baseSha.substring(0, 5)}`
 		},
 		ignoreHTTPStatus: true
 	});
@@ -37,7 +37,7 @@ function renderButton(): void {
 			.append(
 				<button
 					className="btn btn-sm tooltipped tooltipped-n float-right tag-on-workflow-run"
-					aria-label="Create a tag with tag-commit-{milliseconds}-{sha}"
+					aria-label="Create a tag with release-{sha}"
 					type="button"
 				>
 					Tag
