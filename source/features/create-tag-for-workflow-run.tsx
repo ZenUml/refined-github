@@ -1,48 +1,58 @@
 import React from 'dom-chef';
 import select from 'select-dom';
 import delegate from 'delegate-it';
-import * as pageDetect from 'github-url-detection';
-import copyToClipboard from 'copy-text-to-clipboard';
 
 import features from '.';
+import * as api from "../github-helpers/api";
+import {getRepoURL} from "../github-helpers";
 
-function handleClick({delegateTarget: button}: delegate.Event<MouseEvent, HTMLButtonElement>): void {
-	const file = button.closest('.Box, .js-gist-file-update-container')!;
-	const content = select.all('.blob-code-inner', file)
-		.map(({innerText: line}) => line === '\n' ? '' : line) // Must be `.innerText`
-		.join('\n');
-	copyToClipboard(content);
-
-	button.textContent = 'Copied!';
-	button.classList.remove('tooltipped');
-	setTimeout(() => {
-		button.textContent = 'Copy';
-		button.classList.add('tooltipped');
-	}, 2000);
+async function handleClick({delegateTarget: button}: delegate.Event<MouseEvent, HTMLButtonElement>): void {
+	// @ts-ignore
+	const workflowRunUrl =  button.closest('.Box-row').querySelector('.h4>a').getAttribute('href');
+	// @ts-ignore
+	const runEndpoint = 'repos' + workflowRunUrl.replace('/workflow-run/', '/runs/');
+	const response = await api.v3(runEndpoint);
+	await createTag(response.head_sha);
+	button.textContent = 'Tagged!';
 }
 
+async function createTag(baseSha: string): Promise<true | string> {
+	const response = await api.v3(`repos/${getRepoURL()}/git/refs`, {
+		method: 'POST',
+		body: {
+			sha: baseSha,
+			ref: `refs/tags/tag-commit-${new Date().getMilliseconds()}-${baseSha.substring(0, 5)}`
+		},
+		ignoreHTTPStatus: true
+	});
+
+	return response.ok || response.message;
+}
+
+
 function renderButton(): void {
-	for (const button of select.all('.file-actions .btn, [data-hotkey="b"]')) {
+	for (const button of select.all('.d-md-table-cell>a.branch-name')) {
 		button
 			.parentElement! // `BtnGroup`
-			.prepend(
+			.append(
 				<button
-					className="btn btn-sm tooltipped tooltipped-n BtnGroup-item rgh-copy-file"
-					aria-label="Copy file to clipboard"
+					className="btn btn-sm tooltipped tooltipped-n float-right tag-on-workflow-run"
+					aria-label="Create a tag with tag-commit-{milliseconds}-{sha}"
 					type="button"
 				>
-					Copy1
+					Tag
 				</button>
 			);
 	}
 }
 
 function removeButton(): void {
-	select('.rgh-copy-file')?.remove();
+	console.log('$$$$removing ');
+	select('.tag-on-workflow-run')?.remove();
 }
 
 function init(): void {
-	delegate(document, '.rgh-copy-file', 'click', handleClick);
+	delegate(document, '.tag-on-workflow-run', 'click', handleClick);
 
 	if (select.exists('.blob > .markdown-body')) {
 		delegate(document, '.rgh-md-source', 'rgh:view-markdown-source', renderButton);
@@ -58,8 +68,9 @@ void features.add({
 	screenshot: 'https://cloud.githubusercontent.com/assets/170270/14453865/8abeaefe-00c1-11e6-8718-9406cee1dc0d.png'
 }, {
 	include: [
-		pageDetect.isSingleFile,
-		pageDetect.isGist
+		function (): boolean {
+			return location.href.endsWith('actions');
+		}
 	],
 	init
 });
