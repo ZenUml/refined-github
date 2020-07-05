@@ -6,7 +6,7 @@ import features from '.';
 import * as api from "../github-helpers/api";
 import {getRepoURL} from "../github-helpers";
 
-async function handleClick({delegateTarget: button}: delegate.Event<MouseEvent, HTMLButtonElement>): void {
+async function handleClick({delegateTarget: button}: delegate.Event<MouseEvent, HTMLButtonElement>): Promise<void> {
 	// @ts-ignore
 	const workflowRunUrl =  button.closest('.Box-row').querySelector('.h4>a').getAttribute('href');
 	// @ts-ignore
@@ -21,7 +21,7 @@ async function createTag(baseSha: string): Promise<true | string> {
 		method: 'POST',
 		body: {
 			sha: baseSha,
-			ref: `refs/tags/release-${new Date().getMilliseconds()}-${baseSha.substring(0, 5)}`
+			ref: `refs/tags/release-${new Date().getMilliseconds()}-${baseSha.substring(0, 7)}`
 		},
 		ignoreHTTPStatus: true
 	});
