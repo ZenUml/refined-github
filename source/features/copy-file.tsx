@@ -31,7 +31,7 @@ function renderButton(): void {
 					aria-label="Copy file to clipboard"
 					type="button"
 				>
-					Copy
+					Copy1
 				</button>
 			);
 	}
